@@ -1,4 +1,4 @@
-# ===== MASTER GEMMA3 IMAGE CAPTIONING SCRIPT =====
+# ===== MASTER GEMMA3 IMAGE CAPTION SCRIPT =====
 # Works for any Miss Dallia persona. Provide prompt via RunPod request.
 
 import os
