@@ -19,5 +19,5 @@ RUN pip3 install --upgrade pip && pip3 install -r requirements.txt
 # Copy the code
 COPY . .
 
-# Set default command to run your script
-CMD ["python3", "gemma3-image-captioning.py"]
+# Set default command to run the RunPod serverless handler
+CMD ["python3", "-u", "handler.py"]
