@@ -1,20 +1,16 @@
 import runpod
-
-print(">>> Starting handler.py...")
-
-try:
-    print(">>> Importing gemma3_image_captioning...")
-    from gemma3_image_captioning import generate_caption
-    print(">>> Successfully imported gemma3_image_captioning.")
-except Exception as e:
-    import traceback
-    tb = traceback.format_exc()
-    print(">>> FAILED to import gemma3_image_captioning.")
-    print(tb)
-    raise e
+from gemma3_image_captioning import generate_caption
 
 def handler(job):
-    print(">>> Handler called with job:", job)
+    """
+    Expects JSON like:
+    {
+      "input": {
+        "image_url": "<INSERT_YOUR_IMAGE_URL_HERE>",  # Example only
+        "prompt": "optional caption style"
+      }
+    }
+    """
     job_input = job.get("input", {}) or {}
     image_url = job_input.get("image_url")
     prompt = job_input.get("prompt", "")
@@ -24,16 +20,8 @@ def handler(job):
 
     try:
         caption = generate_caption(image_url, prompt)
-        print(">>> Caption generated:", caption)
         return {"caption": caption}
     except Exception as e:
-        import traceback
-        tb = traceback.format_exc()
-        print(">>> Error during caption generation.")
-        print(tb)
-        return {"error": str(e), "traceback": tb}
-
-print(">>> Finished defining handler.")
+        return {"error": str(e)}
 
 runpod.serverless.start({"handler": handler})
-print(">>> runpod.serverless.start called.")
