@@ -1,5 +1,5 @@
-import subprocess
 import runpod
+from gemma3_image_captioning import generate_caption  # import your function
 
 def handler(job):
     """
@@ -18,19 +18,11 @@ def handler(job):
     if not image_url:
         return {"error": "image_url is required"}
 
-    # Build command to run your captioning script
-    command = ["python3", "gemma3-image-captioning.py", "--image_url", image_url]
-    if prompt:
-        command += ["--prompt", prompt]
+    try:
+        caption = generate_caption(image_url, prompt)  # call function directly
+        return {"caption": caption}
+    except Exception as e:
+        return {"error": str(e)}
 
-    # Run the script
-    result = subprocess.run(command, capture_output=True, text=True)
-
-    return {
-        "returncode": result.returncode,
-        "stdout": result.stdout.strip(),
-        "stderr": result.stderr.strip()
-    }
-
-# Start the RunPod serverless handler
+# Start RunPod serverless handler
 runpod.serverless.start({"handler": handler})

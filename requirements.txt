@@ -1,5 +1,5 @@
-accelerate==1.5.2
-transformers==4.50.1
-opencv-python==4.11.0.86
+accelerate
+transformers
+opencv-python
 Pillow
-runpod==1.6.0
+runpod

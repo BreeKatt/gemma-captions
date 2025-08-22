@@ -1,5 +1,5 @@
 # ===== MASTER GEMMA3 IMAGE CAPTION SCRIPT =====
-# Works for any Miss Dallia persona. Provide prompt via RunPod request.
+# Works for any Miss Dallia persona. Can be run standalone or imported by handler.
 
 import os
 import argparse
@@ -7,7 +7,8 @@ import requests
 from io import BytesIO
 from PIL import Image
 import torch
-from transformers import AutoProcessor, Gemma3ForConditionalGeneration, BitsAndBytesConfig
+from transformers import AutoProcessor, BitsAndBytesConfig
+from transformers.models.gemma3.modeling_gemma3 import Gemma3ForConditionalGeneration
 
 # Default model and template prompt (overridden via JSON request)
 MODEL_ID = "unsloth/gemma-3-27b-pt"
@@ -16,24 +17,16 @@ DEFAULT_PROMPT = (
     "[OUTFIT], [POSTURE_AND_POSE], [LIGHTING_AND_SHADOWS], [BACKGROUND]"
 )
 
-def parse_arguments():
-    parser = argparse.ArgumentParser(description='Gemma 3 Image Captioning')
-    parser.add_argument('--image_url', type=str, required=True,
-                        help='URL of the image to caption')
-    parser.add_argument('--prompt', type=str, default=DEFAULT_PROMPT,
-                        help='Prompt for image captioning')
-    parser.add_argument('--model_id', type=str, default=MODEL_ID,
-                        help='Gemma 3 model ID')
-    parser.add_argument('--hf_token', type=str, default=None,
-                        help='Hugging Face API token (optional, required for gated models)')
-    parser.add_argument('--quantize', action='store_true',
-                        help='Use 8-bit quantization to reduce memory usage')
-    parser.add_argument('--max_new_tokens', type=int, default=256,
-                        help='Maximum number of tokens to generate')
-    return parser.parse_args()
+# Cache model/processor so they’re loaded only once
+_model = None
+_processor = None
 
-def setup_model(model_id, hf_token, use_quantization):
-    """Load the Gemma 3 model and processor."""
+def setup_model(model_id=MODEL_ID, hf_token=None, use_quantization=False):
+    """Load (and cache) the Gemma 3 model and processor."""
+    global _model, _processor
+    if _model is not None and _processor is not None:
+        return _model, _processor
+
     if hf_token:
         os.environ["HF_TOKEN"] = hf_token
         token_param = {"token": hf_token}
@@ -43,7 +36,7 @@ def setup_model(model_id, hf_token, use_quantization):
     quantization_config = BitsAndBytesConfig(load_in_8bit=True) if use_quantization else None
     dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
 
-    model = Gemma3ForConditionalGeneration.from_pretrained(
+    _model = Gemma3ForConditionalGeneration.from_pretrained(
         model_id,
         torch_dtype=dtype,
         device_map="auto" if torch.cuda.is_available() else None,
@@ -51,16 +44,19 @@ def setup_model(model_id, hf_token, use_quantization):
         **token_param
     ).eval()
 
-    processor = AutoProcessor.from_pretrained(model_id, **token_param)
-    return model, processor
+    _processor = AutoProcessor.from_pretrained(model_id, **token_param)
+    return _model, _processor
 
-def load_image_from_url(url):
+
+def load_image_from_url(url: str):
     """Download image from URL and convert to RGB."""
     response = requests.get(url)
+    response.raise_for_status()
     image = Image.open(BytesIO(response.content)).convert("RGB")
     return image
 
-def caption_image(image, model, processor, prompt, max_new_tokens):
+
+def caption_image(image, model, processor, prompt, max_new_tokens=256):
     """Generate caption for a single image."""
     messages = [
         {
@@ -94,22 +90,6 @@ def caption_image(image, model, processor, prompt, max_new_tokens):
     caption = processor.decode(generated_tokens, skip_special_tokens=True)
     return caption.replace('\n', ' ').strip()
 
-def main():
-    args = parse_arguments()
 
-    print(f"Loading model: {args.model_id}...")
-    model, processor = setup_model(args.model_id, args.hf_token, args.quantize)
-    print("Model loaded.")
-
-    print(f"Downloading image from URL: {args.image_url}")
-    image = load_image_from_url(args.image_url)
-
-    print(f"Generating caption using prompt: {args.prompt}")
-    caption = caption_image(image, model, processor, args.prompt, args.max_new_tokens)
-    
-    print("\n===== GENERATED CAPTION =====")
-    print(caption)
-    print("=============================")
-
-if __name__ == "__main__":
-    main()
+def generate_caption(image_url: str, prompt: str = DEFAULT_PROMPT, 
+                     model_id: str = MODEL_ID,
