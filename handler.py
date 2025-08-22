@@ -1,3 +1,4 @@
+import traceback
 import runpod
 from gemma3_image_captioning import generate_caption
 
@@ -22,6 +23,9 @@ def handler(job):
         caption = generate_caption(image_url, prompt)
         return {"caption": caption}
     except Exception as e:
-        return {"error": str(e)}
+        return {
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
 
 runpod.serverless.start({"handler": handler})
