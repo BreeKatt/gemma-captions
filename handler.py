@@ -24,5 +24,5 @@ def handler(job):
     except Exception as e:
         return {"error": str(e)}
 
-# Start RunPod serverless handler
+# Start RunPod Serverless Handler-
 runpod.serverless.start({"handler": handler})
