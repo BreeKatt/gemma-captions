@@ -1,12 +1,12 @@
 import runpod
-from gemma3_image_captioning import generate_caption  # import your function
+from gemma3_image_captioning import generate_caption
 
 def handler(job):
     """
     Expects JSON like:
     {
       "input": {
-        "image_url": "https://.../my.jpg",
+        "image_url": "https://i.postimg.cc/WpQLpkvD/TEST.png",
         "prompt": "optional caption style"
       }
     }
@@ -19,10 +19,9 @@ def handler(job):
         return {"error": "image_url is required"}
 
     try:
-        caption = generate_caption(image_url, prompt)  # call function directly
+        caption = generate_caption(image_url, prompt)
         return {"caption": caption}
     except Exception as e:
         return {"error": str(e)}
 
-# Start RunPod Serverless Handler-
 runpod.serverless.start({"handler": handler})

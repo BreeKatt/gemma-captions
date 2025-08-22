@@ -1,23 +1,15 @@
-# Use an official Python base image with CUDA for GPU
-FROM nvidia/cuda:12.1.1-runtime-ubuntu22.04
-
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install Python + basic tools
-RUN apt-get update && apt-get install -y \
-    python3 python3-pip git && \
-    rm -rf /var/lib/apt/lists/*
+# Slim Python image for fast builds (CPU only)
+FROM python:3.10-slim
 
 # Set working directory
 WORKDIR /workspace
 
-# Copy requirements and install
+# Copy and install dependencies
 COPY requirements.txt .
-RUN pip3 install --upgrade pip && pip3 install -r requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Copy the code
+# Copy code
 COPY . .
 
-# Set default command to run the RunPod serverless handler
+# Run handler
 CMD ["python3", "-u", "handler.py"]
