@@ -1,3 +1,4 @@
+# Trigger rebuild - minor comment #001
 def generate_caption(image_url: str, prompt: str = DEFAULT_PROMPT,
                      model_id: str = MODEL_ID, hf_token=None,
                      quantize=False, max_new_tokens=256):
